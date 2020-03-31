@@ -1,4 +1,5 @@
-use cpp::{cpp, cpp_class};
+use crate::IndexIVFFlat;
+use cpp::cpp;
 
 cpp! {{
     #include <iostream>
@@ -17,10 +18,8 @@ cpp! {{
 
 }}
 
-cpp_class!(pub(crate) unsafe struct IndexIVFFlat as "faiss::IndexIVFFlat");
-
 impl IndexIVFFlat {
-    fn new(dimension: i32, trainvecs: Vec<f32>) -> Self {
+    pub fn new(dimension: i32, trainvecs: Vec<f32>) -> Self {
         let doc_size: usize = 10_000_000;
         let train_num = trainvecs.len() as i32 / dimension;
         unsafe {
@@ -87,7 +86,7 @@ impl IndexIVFFlat {
         };
 
         let mut temp = len - 1;
-        while temp >= 0 {
+        loop {
             if nns[temp] == -1 {
                 temp -= 1;
                 continue;
@@ -114,7 +113,7 @@ fn test_ivf_flat_add() {
     let train_size = 10000;
 
     let mut vec = Vec::with_capacity(dimension * train_size);
-    for i in 0..vec.capacity() {
+    for _ in 0..vec.capacity() {
         let v = rand::random::<f32>();
         vec.push(v);
     }
@@ -133,19 +132,19 @@ fn test_ivf_flat_add() {
     for _i in 0..vec.capacity() {
         vec.push(rand::random::<f32>());
     }
-    index.add_with_id(99999999, vec);
+    index.add_with_id(99999999, vec).unwrap();
 
     println!("========= test add with ids");
     let mid = index_size / 2 + 1;
     let mut vec = Vec::with_capacity(dimension * index_size / 2);
     let mut ids: Vec<i64> = Vec::with_capacity(vec.capacity());
-    for i in 0..vec.capacity() {
+    for _i in 0..vec.capacity() {
         vec.push(rand::random::<f32>());
     }
     for i in mid..index_size / 2 + 1 {
         ids.push(i as i64);
     }
-    index.add_with_ids(ids, vec);
+    index.add_with_ids(ids, vec).unwrap();
 
     println!("========= test search");
     let mut vec = Vec::with_capacity(dimension);
