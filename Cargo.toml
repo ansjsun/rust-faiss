@@ -6,7 +6,7 @@ authors = ["Ansj <ansj-sun@163.com>"]
 edition = "2018"
 license = "Apache-2.0"
 keywords = ["faiss", "vector", "simarly", "ai"]
-homepage = "https://github.com/ansj-sun/rust-faiss"
+homepage = "https://github.com/ansjsun/rust-faiss"
 
 
 [dependencies]
