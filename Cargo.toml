@@ -1,7 +1,7 @@
 [package]
 name = "faiss4rs"
 description = "Rust wrapper for Facebook's faiss"
-version = "0.1.0"
+version = "v.1.6.3.1"
 authors = ["Ansj <ansj-sun@163.com>"]
 edition = "2018"
 license = "Apache-2.0"
