@@ -72,7 +72,7 @@ dependencies = [
 
 [[package]]
 name = "faiss4rs"
-version = "0.1.0"
+version = "1.6.301"
 dependencies = [
  "cpp 0.5.4 (git+https://github.com/mystor/rust-cpp)",
  "cpp_build 0.5.4 (git+https://github.com/mystor/rust-cpp)",
