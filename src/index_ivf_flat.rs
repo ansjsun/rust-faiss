@@ -19,11 +19,10 @@ cpp! {{
 }}
 
 impl IndexIVFFlat {
-    pub fn new(dimension: i32, trainvecs: Vec<f32>) -> Self {
-        let doc_size: usize = 10_000_000;
-        let train_num = trainvecs.len() as i32 / dimension;
+    pub fn new(dimension: i32) -> Self {
+        let doc_size = 1_000_000;
         unsafe {
-            cpp!([dimension as "int",doc_size as "size_t", train_num as "int", trainvecs as "std::vector<float>"] ->  IndexIVFFlat as "faiss::IndexIVFFlat"{
+            cpp!([dimension as "int", doc_size as "int"] ->  IndexIVFFlat as "faiss::IndexIVFFlat"{
                 size_t nhash = 2;
                 size_t nbits_subq = int (log2 (doc_size+1) / 2);
                 size_t ncentroids = 1 << (nhash * nbits_subq);
@@ -33,10 +32,22 @@ impl IndexIVFFlat {
                 (*index).quantizer_trains_alone = true;
                 (*index).verbose = true;
                 (*index).nprobe = 2048;
-                (*index).train(train_num, trainvecs.data());
                 return *index ;
             })
         }
+    }
+
+    pub fn train(&self, trainvecs: Vec<f32>) -> Result<(), Box<dyn std::error::Error>> {
+        unsafe {
+            let train_size = trainvecs.len() as i32;
+            cpp!([self as "faiss::IndexIVFFlat *", train_size as "int", trainvecs as "std::vector<float>"]{
+                size_t nt = train_size / self -> d ;
+                printf("[%d] [%d] [%d]",train_size,self -> d, nt);
+                self -> train(nt, trainvecs.data());
+            });
+        }
+
+        Ok(())
     }
 
     pub fn add(&self, num: usize, datavecs: Vec<f32>) {
@@ -117,7 +128,9 @@ fn test_ivf_flat_add() {
         let v = rand::random::<f32>();
         vec.push(v);
     }
-    let index = IndexIVFFlat::new(128, vec);
+    let index = IndexIVFFlat::new(128);
+
+    index.train(vec).unwrap();
 
     println!("========= test add");
     let mut vec = Vec::with_capacity(dimension * index_size / 2);
