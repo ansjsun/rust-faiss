@@ -42,7 +42,6 @@ impl IndexIVFFlat {
             let train_size = trainvecs.len() as i32;
             cpp!([self as "faiss::IndexIVFFlat *", train_size as "int", trainvecs as "std::vector<float>"]{
                 size_t nt = train_size / self -> d ;
-                printf("[%d] [%d] [%d]",train_size,self -> d, nt);
                 self -> train(nt, trainvecs.data());
             });
         }
