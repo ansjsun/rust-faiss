@@ -37,35 +37,35 @@ impl IndexIVFFlat {
         }
     }
 
-    pub fn train(&self, trainvecs: Vec<f32>) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn train(&self, trainvecs: &Vec<f32>) -> Result<(), Box<dyn std::error::Error>> {
         unsafe {
             let train_size = trainvecs.len() as i32;
-            cpp!([self as "faiss::IndexIVFFlat *", train_size as "int", trainvecs as "std::vector<float>"]{
+            cpp!([self as "faiss::IndexIVFFlat *", train_size as "int", trainvecs as "std::vector<float> *"]{
                 size_t nt = train_size / self -> d ;
-                self -> train(nt, trainvecs.data());
+                self -> train(nt, trainvecs -> data());
             });
         }
 
         Ok(())
     }
 
-    pub fn add(&self, num: usize, datavecs: Vec<f32>) {
+    pub fn add(&self, num: usize, datavecs: &Vec<f32>) {
         unsafe {
-            cpp!([self as "faiss::IndexIVFFlat *", num as "size_t", datavecs as "std::vector<float>"] {
-                self -> add(num, datavecs.data()) ;
+            cpp!([self as "faiss::IndexIVFFlat *", num as "size_t", datavecs as "std::vector<float> *"] {
+                self -> add(num, datavecs -> data()) ;
             })
         };
     }
 
     pub fn add_with_ids(
         &self,
-        ids: Vec<i64>,
-        datavecs: Vec<f32>,
+        ids: &Vec<i64>,
+        datavecs: &Vec<f32>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let num = ids.len();
         unsafe {
-            cpp!([self as "faiss::IndexIVFFlat *", num as "size_t", datavecs as "std::vector<float>", ids as "std::vector<faiss::Index::idx_t>"] {
-                self -> add_with_ids(num, datavecs.data(), ids.data()) ;
+            cpp!([self as "faiss::IndexIVFFlat *", num as "size_t", datavecs as "std::vector<float> *", ids as "std::vector<faiss::Index::idx_t> *"] {
+                self -> add_with_ids(num, datavecs -> data(), ids -> data()) ;
             })
         };
 
@@ -75,9 +75,9 @@ impl IndexIVFFlat {
     pub fn add_with_id(
         &self,
         id: i64,
-        datavecs: Vec<f32>,
+        datavecs: &Vec<f32>,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        self.add_with_ids(vec![id], datavecs)
+        self.add_with_ids(&vec![id], datavecs)
     }
 
     // search index, return  id list , and score list . if result < size , it will truncate
@@ -129,7 +129,7 @@ fn test_ivf_flat_add() {
     }
     let index = IndexIVFFlat::new(128);
 
-    index.train(vec).unwrap();
+    index.train(&vec).unwrap();
 
     println!("========= test add");
     let mut vec = Vec::with_capacity(dimension * index_size / 2);
@@ -137,14 +137,14 @@ fn test_ivf_flat_add() {
         vec.push(rand::random::<f32>());
     }
 
-    index.add(index_size / 2, vec);
+    index.add(index_size / 2, &vec);
 
     println!("========= test add with id");
     let mut vec = Vec::with_capacity(dimension);
     for _i in 0..vec.capacity() {
         vec.push(rand::random::<f32>());
     }
-    index.add_with_id(99999999, vec).unwrap();
+    index.add_with_id(99999999, &vec).unwrap();
 
     println!("========= test add with ids");
     let mid = index_size / 2 + 1;
@@ -156,7 +156,7 @@ fn test_ivf_flat_add() {
     for i in mid..index_size / 2 + 1 {
         ids.push(i as i64);
     }
-    index.add_with_ids(ids, vec).unwrap();
+    index.add_with_ids(&ids, &vec).unwrap();
 
     println!("========= test search");
     let mut vec = Vec::with_capacity(dimension);
