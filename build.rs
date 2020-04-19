@@ -1,8 +1,10 @@
 fn main() {
     if get_os_type() == "macos" {
         println!("cargo:rustc-link-lib=dylib=omp");
+        println!("cargo:rustc-link-lib=dylib=faiss");
+    } else {
+        println!("cargo:rustc-link-lib=static=faiss");
     }
-    println!("cargo:rustc-link-lib=dylib=faiss");
     cpp_build::Config::new().build("src/lib.rs");
 }
 
