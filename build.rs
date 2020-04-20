@@ -3,9 +3,8 @@ fn main() {
         println!("cargo:rustc-link-lib=dylib=omp");
         println!("cargo:rustc-link-lib=dylib=faiss");
     } else {
-        println!("cargo:rustc-flags=-l dylib=stdc++");
-
-        println!("cargo:rustc-link-lib=dylib=faiss");
+        println!("cargo:rustc-link-lib=dylib=stdc++");
+        println!("cargo:rustc-link-lib=faiss");
         println!("cargo:rustc-link-lib=dylib=gomp");
         println!("cargo:rustc-link-lib=dylib=blas");
         println!("cargo:rustc-link-lib=dylib=lapack");
