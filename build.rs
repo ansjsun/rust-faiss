@@ -11,7 +11,7 @@ fn main() {
         println!("cargo:rustc-link-lib=dylib=lapack");
     }
     cpp_build::Config::new()
-        .cpp_set_stdlib(Some("gcc"))
+        .cpp_set_stdlib(Some("stdc++"))
         .build("src/lib.rs");
 }
 
