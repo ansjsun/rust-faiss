@@ -6,7 +6,7 @@ fn main() {
         println!("cargo:rustc-link-lib=dylib=stdc++");
         println!("cargo:rustc-link-lib=static=faiss");
         println!("cargo:rustc-link-lib=dylib=gomp");
-        // println!("cargo:rustc-link-lib=dylib=blas");
+        println!("cargo:rustc-link-lib=dylib=blas");
         // println!("cargo:rustc-link-lib=dylib=lapack");
     }
     cpp_build::Config::new().build("src/lib.rs");
