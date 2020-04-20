@@ -10,7 +10,7 @@ fn main() {
         println!("cargo:rustc-link-lib=dylib=lapack");
     }
     cpp_build::Config::new()
-        .cpp_link_stdlib(Some("stdc++"))
+        // .cpp_link_stdlib(Some("stdc++"))
         .build("src/lib.rs");
 }
 
