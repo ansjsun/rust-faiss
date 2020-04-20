@@ -9,9 +9,7 @@ fn main() {
         println!("cargo:rustc-link-lib=dylib=blas");
         println!("cargo:rustc-link-lib=dylib=lapack");
     }
-    cpp_build::Config::new()
-        .cpp_link_stdlib(None)
-        .build("src/lib.rs");
+    cpp_build::Config::new().build("src/lib.rs");
 }
 
 fn get_os_type() -> &'static str {
