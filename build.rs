@@ -3,7 +3,6 @@ fn main() {
         println!("cargo:rustc-link-lib=dylib=omp");
         println!("cargo:rustc-link-lib=dylib=faiss");
     } else {
-        println!("cargo:rustc-link-lib=dylib=g++");
         println!("cargo:rustc-link-lib=dylib=stdc++");
         println!("cargo:rustc-link-lib=dylib=faiss");
     }
