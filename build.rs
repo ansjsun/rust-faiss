@@ -4,7 +4,6 @@ fn main() {
         println!("cargo:rustc-link-lib=dylib=faiss");
     } else {
         println!("cargo:rustc-link-lib=dylib=stdc++");
-        println!("cargo:rustc-link-lib=static=openbals");
         println!("cargo:rustc-link-lib=static=faiss");
     }
     cpp_build::Config::new().build("src/lib.rs");
