@@ -3,9 +3,8 @@ fn main() {
         println!("cargo:rustc-link-lib=dylib=omp");
         println!("cargo:rustc-link-lib=dylib=faiss");
     } else {
-        println!("cargo:rustc-link-lib=dylib=stdc++11");
-        println!("cargo:rustc-link-lib=dylib=c++");
-        println!("cargo:rustc-link-lib=dylib=faiss");
+        println!("cargo:rustc-link-lib=static=stdc++");
+        println!("cargo:rustc-link-lib=static=faiss");
     }
     cpp_build::Config::new().build("src/lib.rs");
 }
