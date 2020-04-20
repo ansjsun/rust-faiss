@@ -4,7 +4,7 @@ fn main() {
         println!("cargo:rustc-link-lib=dylib=faiss");
     } else {
         println!("cargo:rustc-link-lib=stdc++");
-        println!("cargo:rustc-link-lib=faiss");
+        // println!("cargo:rustc-link-lib=faiss");
         // println!("cargo:rustc-link-lib=dylib=gomp");
         // println!("cargo:rustc-link-lib=dylib=blas");
         // println!("cargo:rustc-link-lib=dylib=lapack");
