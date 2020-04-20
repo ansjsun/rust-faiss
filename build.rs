@@ -3,10 +3,13 @@ fn main() {
         println!("cargo:rustc-link-lib=dylib=omp");
         println!("cargo:rustc-link-lib=dylib=faiss");
     } else {
+        println!("=============================================");
         println!("cargo:rustc-link-lib=dylib=stdc++");
         println!("cargo:rustc-link-lib=dylib=faiss");
     }
-    cpp_build::Config::new().build("src/lib.rs");
+    cpp_build::Config::new()
+        .cpp_link_stdlib(Some("faiss"))
+        .build("src/lib.rs");
 }
 
 fn get_os_type() -> &'static str {
