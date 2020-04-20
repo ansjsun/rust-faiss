@@ -3,7 +3,6 @@ fn main() {
         println!("cargo:rustc-link-lib=dylib=omp");
         println!("cargo:rustc-link-lib=dylib=faiss");
     } else {
-        println!("cargo:rustc-link-lib=dylib=stdc++");
         println!("cargo:rustc-link-lib=dylib=gcc");
         println!("cargo:rustc-link-lib=dylib=faiss");
         println!("cargo:rustc-link-lib=dylib=gomp");
@@ -11,7 +10,7 @@ fn main() {
         println!("cargo:rustc-link-lib=dylib=lapack");
     }
     cpp_build::Config::new()
-        // .cpp_link_stdlib(Some("c++11"))
+        .cpp_link_stdlib(None)
         .build("src/lib.rs");
 }
 
