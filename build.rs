@@ -3,13 +3,12 @@ fn main() {
         println!("cargo:rustc-link-lib=dylib=omp");
         println!("cargo:rustc-link-lib=dylib=faiss");
     } else {
-        // println!("cargo:rustc-link-lib=dylib=stdc++");
-        println!("cargo:rustc-link-lib=dylib=faiss");
-        // println!("cargo:rustc-link-lib=dylib=gomp");
-        // println!("cargo:rustc-link-lib=dylib=blas");
-        // println!("cargo:rustc-link-lib=dylib=lapack");
+        println!("cargo:rustc-link-search=/rust-faiss/faiss");
+        println!("cargo:rustc-link-lib=static=faiss");
+        println!("cargo:rustc-link-lib=gomp");
+        println!("cargo:rustc-link-lib=blas");
+        println!("cargo:rustc-link-lib=lapack");
     }
-    // export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/rust-faiss/faiss
     cpp_build::Config::new().build("src/lib.rs");
 }
 
