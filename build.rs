@@ -1,5 +1,4 @@
 fn main() {
-    println!("", )
     if get_os_type() == "macos" {
         println!("cargo:rustc-link-search=faiss/");
         println!("cargo:rustc-link-lib=dylib=omp");
