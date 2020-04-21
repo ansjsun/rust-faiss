@@ -1,14 +1,17 @@
 fn main() {
+    println!("", )
     if get_os_type() == "macos" {
+        println!("cargo:rustc-link-search=faiss/");
         println!("cargo:rustc-link-lib=dylib=omp");
         println!("cargo:rustc-link-lib=dylib=faiss");
     } else {
-        println!("cargo:rustc-link-search=/rust-faiss/faiss");
+        println!("cargo:rustc-link-search=/rust-faiss/faiss/");
         println!("cargo:rustc-link-lib=static=faiss");
         println!("cargo:rustc-link-lib=gomp");
         println!("cargo:rustc-link-lib=blas");
         println!("cargo:rustc-link-lib=lapack");
     }
+
     cpp_build::Config::new().build("src/lib.rs");
 }
 
