@@ -1,4 +1,4 @@
-use crate::{Config, IndexIVFFlat};
+use crate::{Config, IndexHNSW};
 use cpp::cpp;
 
 cpp! {{
@@ -10,30 +10,22 @@ cpp! {{
 
     #include <sys/time.h>
 
-
     #include <faiss/IndexPQ.h>
-    #include <faiss/IndexIVFFlat.h>
+    #include <faiss/IndexHNSW.h>
     #include <faiss/IndexFlat.h>
     #include <faiss/index_io.h>
 
 }}
 
-impl IndexIVFFlat {
+impl IndexHNSW {
     pub fn new(conf: &Config) -> Result<Self, String> {
-        let (dimension, nprobe, ncentroids) = (conf.dimension, conf.nprobe, conf.ncentroids);
-
-        let nhash = 2;
-        //number of bit per subvector index
-        let nbits_subq = ((ncentroids as f32).log2() / nhash as f32) as i32;
-
+        let dimension = conf.dimension;
         let index = unsafe {
-            cpp!([dimension as "int", nprobe as "int", nbits_subq as "int",nhash as "int", ncentroids as "size_t"] ->  IndexIVFFlat as "faiss::IndexIVFFlat"{
-                faiss::MultiIndexQuantizer *coarse_quantizer = new faiss::MultiIndexQuantizer(dimension, nhash, nbits_subq);
+            cpp!([dimension as "int"] ->  IndexHNSW as "faiss::IndexHNSW"{
                 faiss::MetricType metric = faiss::METRIC_L2;
-                faiss::IndexIVFFlat *index = new faiss::IndexIVFFlat(coarse_quantizer, dimension, ncentroids, metric);
-                (*index).quantizer_trains_alone = true;
+                // 32 number of neighbors
+                faiss::IndexHNSW *index = new faiss::IndexHNSW(dimension, 32, metric);
                 (*index).verbose = true;
-                (*index).nprobe = nprobe;
                 return *index ;
             })
         };
@@ -44,7 +36,7 @@ impl IndexIVFFlat {
     pub fn train(&self, trainvecs: &Vec<f32>) -> Result<(), Box<dyn std::error::Error>> {
         unsafe {
             let train_size = trainvecs.len() as i32;
-            cpp!([self as "faiss::IndexIVFFlat *", train_size as "int", trainvecs as "std::vector<float> *"]{
+            cpp!([self as "faiss::IndexHNSW *", train_size as "int", trainvecs as "std::vector<float> *"]{
                 size_t nt = train_size / self -> d ;
                 self -> train(nt, trainvecs -> data());
             });
@@ -55,7 +47,7 @@ impl IndexIVFFlat {
 
     pub fn add(&self, num: usize, datavecs: &Vec<f32>) {
         unsafe {
-            cpp!([self as "faiss::IndexIVFFlat *", num as "size_t", datavecs as "std::vector<float> *"] {
+            cpp!([self as "faiss::IndexHNSW *", num as "size_t", datavecs as "std::vector<float> *"] {
                 self -> add(num, datavecs -> data()) ;
             })
         };
@@ -68,7 +60,7 @@ impl IndexIVFFlat {
     ) -> Result<(), Box<dyn std::error::Error>> {
         let num = ids.len();
         unsafe {
-            cpp!([self as "faiss::IndexIVFFlat *", num as "size_t", datavecs as "std::vector<float> *", ids as "std::vector<faiss::Index::idx_t> *"] {
+            cpp!([self as "faiss::IndexHNSW *", num as "size_t", datavecs as "std::vector<float> *", ids as "std::vector<faiss::Index::idx_t> *"] {
                 self -> add_with_ids(num, datavecs -> data(), ids -> data()) ;
             })
         };
@@ -91,7 +83,7 @@ impl IndexIVFFlat {
         let mut dis: Vec<f32> = Vec::with_capacity(len);
         unsafe {
             let (nns, dis) = (&mut nns, &mut dis);
-            cpp!([self as "faiss::IndexIVFFlat *",num_querys as "int", size as "int" , queries  as "std::vector<float> *" ,
+            cpp!([self as "faiss::IndexHNSW *",num_querys as "int", size as "int" , queries  as "std::vector<float> *" ,
                 nns as "std::vector<int64_t> *" , dis as "std::vector<float> *" ]{
                 self -> search(num_querys, queries -> data(), size, dis -> data(), nns -> data());
             });
@@ -119,7 +111,7 @@ impl IndexIVFFlat {
 }
 
 #[test]
-fn test_ivf_flat_add() {
+fn test_hnsw_add() {
     use rand;
 
     let dimension: usize = 128;
@@ -133,7 +125,7 @@ fn test_ivf_flat_add() {
         let v = rand::random::<f32>();
         vec.push(v);
     }
-    let index = IndexIVFFlat::new(&conf).unwrap();
+    let index = IndexHNSW::new(&conf).unwrap();
 
     index.train(&vec).unwrap();
 
