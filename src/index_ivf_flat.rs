@@ -1,4 +1,4 @@
-use crate::IndexIVFFlat;
+use crate::{Config, IndexIVFFlat};
 use cpp::cpp;
 
 cpp! {{
@@ -19,11 +19,11 @@ cpp! {{
 }}
 
 impl IndexIVFFlat {
-    pub fn new(dimension: i32) -> Self {
-        let doc_size = 1_000_000;
+    pub fn new(conf: &Config) -> Self {
+        let (dimension, doc_size, nhash, nprobe) =
+            (conf.dimension, conf.doc_size, conf.nhash, conf.nprobe);
         unsafe {
-            cpp!([dimension as "int", doc_size as "int"] ->  IndexIVFFlat as "faiss::IndexIVFFlat"{
-                size_t nhash = 2;
+            cpp!([dimension as "int", doc_size as "int" , nhash as "int", nprobe as "int"] ->  IndexIVFFlat as "faiss::IndexIVFFlat"{
                 size_t nbits_subq = int (log2 (doc_size+1) / 2);
                 size_t ncentroids = 1 << (nhash * nbits_subq);
                 faiss::MultiIndexQuantizer *coarse_quantizer = new faiss::MultiIndexQuantizer(dimension, nhash, nbits_subq);
@@ -31,7 +31,7 @@ impl IndexIVFFlat {
                 faiss::IndexIVFFlat *index = new faiss::IndexIVFFlat(coarse_quantizer, dimension, ncentroids, metric);
                 (*index).quantizer_trains_alone = true;
                 (*index).verbose = true;
-                (*index).nprobe = 2048;
+                (*index).nprobe = nprobe;
                 return *index ;
             })
         }
@@ -118,16 +118,18 @@ impl IndexIVFFlat {
 fn test_ivf_flat_add() {
     use rand;
 
-    let dimension = 128;
+    let dimension: usize = 128;
     let index_size = 100000;
     let train_size = 10000;
+
+    let conf = Config::new(dimension as i32);
 
     let mut vec = Vec::with_capacity(dimension * train_size);
     for _ in 0..vec.capacity() {
         let v = rand::random::<f32>();
         vec.push(v);
     }
-    let index = IndexIVFFlat::new(128);
+    let index = IndexIVFFlat::new(&conf);
 
     index.train(&vec).unwrap();
 
