@@ -1,5 +1,6 @@
 #![recursion_limit = "512"]
 #![cfg_attr(not(test), allow(dead_code, unused_imports))]
+#![allow(unused)]
 
 use cpp::cpp;
 use cpp::cpp_class;
