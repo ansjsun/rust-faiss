@@ -1,4 +1,4 @@
-// use crate::{Config, IndexIVFPQ};
+// use crate::{Config, IndexFlat};
 // use cpp::cpp;
 
 // cpp! {{
@@ -11,32 +11,19 @@
 //     #include <sys/time.h>
 
 //     #include <faiss/IndexPQ.h>
-//     #include <faiss/IndexIVFPQ.h>
+//     #include <faiss/IndexFlat.h>
 //     #include <faiss/IndexFlat.h>
 //     #include <faiss/index_io.h>
 
 // }}
 
-// impl IndexIVFPQ {
+// impl IndexFlat {
 //     pub fn new(conf: &Config) -> Result<Self, String> {
-//         let (dimension, nprobe, ncentroids, bytes_per_code) = (
-//             conf.dimension,
-//             conf.nprobe,
-//             conf.ncentroids,
-//             conf.bytes_per_code,
-//         );
-
-//         let nhash = 2;
-//         //number of bit per subvector index
-//         let nbits_subq = ((ncentroids as f32).log2() / nhash as f32) as i32;
-
+//         let (dimension, metric_type) = (conf.dimension, conf.metric_type);
 //         let index = unsafe {
-//             cpp!([dimension as "int", nprobe as "int", nbits_subq as "int",nhash as "int", ncentroids as "size_t", bytes_per_code as "int"] ->  IndexIVFPQ as "faiss::IndexIVFPQ"{
-//                 faiss::MultiIndexQuantizer *coarse_quantizer = new faiss::MultiIndexQuantizer(dimension, nhash, nbits_subq);
-//                 faiss::IndexIVFPQ *index = new faiss::IndexIVFPQ(coarse_quantizer, dimension, ncentroids, bytes_per_code, 8);
-//                 (*index).quantizer_trains_alone = true;
+//             cpp!([dimension as "int" , metric_type as "faiss::MetricType"] ->  IndexFlat as "faiss::IndexFlat"{
+//                 faiss::IndexFlat *index = new faiss::IndexFlat(dimension, metric_type);
 //                 (*index).verbose = true;
-//                 (*index).nprobe = nprobe;
 //                 return *index ;
 //             })
 //         };
@@ -47,7 +34,7 @@
 //     pub fn train(&self, trainvecs: &Vec<f32>) -> Result<(), Box<dyn std::error::Error>> {
 //         unsafe {
 //             let train_size = trainvecs.len() as i32;
-//             cpp!([self as "faiss::IndexIVFPQ *", train_size as "int", trainvecs as "std::vector<float> *"]{
+//             cpp!([self as "faiss::IndexFlat *", train_size as "int", trainvecs as "std::vector<float> *"]{
 //                 size_t nt = train_size / self -> d ;
 //                 self -> train(nt, trainvecs -> data());
 //             });
@@ -58,7 +45,7 @@
 
 //     pub fn add(&self, num: usize, datavecs: &Vec<f32>) {
 //         unsafe {
-//             cpp!([self as "faiss::IndexIVFPQ *", num as "size_t", datavecs as "std::vector<float> *"] {
+//             cpp!([self as "faiss::IndexFlat *", num as "size_t", datavecs as "std::vector<float> *"] {
 //                 self -> add(num, datavecs -> data()) ;
 //             })
 //         };
@@ -69,13 +56,10 @@
 //         ids: &Vec<i64>,
 //         datavecs: &Vec<f32>,
 //     ) -> Result<(), Box<dyn std::error::Error>> {
-//         let num = ids.len();
-//         unsafe {
-//             cpp!([self as "faiss::IndexIVFPQ *", num as "size_t", datavecs as "std::vector<float> *", ids as "std::vector<faiss::Index::idx_t> *"] {
-//                 self -> add_with_ids(num, datavecs -> data(), ids -> data()) ;
-//             })
-//         };
-
+//         let dim = datavecs.len() / ids.len();
+//         for (i, id) in ids.iter().enumerate() {
+//             self.add_with_id(*id, &datavecs[i * dim..=dim].to_vec())?;
+//         }
 //         Ok(())
 //     }
 
@@ -84,7 +68,14 @@
 //         id: i64,
 //         datavecs: &Vec<f32>,
 //     ) -> Result<(), Box<dyn std::error::Error>> {
-//         self.add_with_ids(&vec![id], datavecs)
+//         println!("{}=========={:?}", id, datavecs);
+//         unsafe {
+//             cpp!([self as "faiss::IndexFlat *", id as "faiss::Index::idx_t", datavecs as "std::vector<float> *"] {
+//                 self -> add(id, datavecs -> data()) ;
+//             })
+//         };
+
+//         Ok(())
 //     }
 
 //     // search index, return  id list , and score list . if result < size , it will truncate
@@ -94,7 +85,7 @@
 //         let mut dis: Vec<f32> = Vec::with_capacity(len);
 //         unsafe {
 //             let (nns, dis) = (&mut nns, &mut dis);
-//             cpp!([self as "faiss::IndexIVFPQ *",num_querys as "int", size as "int" , queries  as "std::vector<float> *" ,
+//             cpp!([self as "faiss::IndexFlat *",num_querys as "int", size as "int" , queries  as "std::vector<float> *" ,
 //                 nns as "std::vector<int64_t> *" , dis as "std::vector<float> *" ]{
 //                 self -> search(num_querys, queries -> data(), size, dis -> data(), nns -> data());
 //             });
@@ -122,7 +113,7 @@
 // }
 
 // #[test]
-// fn test_ivf_pd_add() {
+// fn test_ivf_add() {
 //     use rand;
 
 //     let dimension: usize = 128;
@@ -136,36 +127,44 @@
 //         let v = rand::random::<f32>();
 //         vec.push(v);
 //     }
-//     let index = IndexIVFPQ::new(&conf).unwrap();
+//     let index = IndexFlat::new(&conf).unwrap();
 
-//     index.train(&vec).unwrap();
-
-//     println!("========= test add");
-//     let mut vec = Vec::with_capacity(dimension * index_size / 2);
-//     for _i in 0..vec.capacity() {
-//         vec.push(rand::random::<f32>());
-//     }
-
-//     index.add(index_size / 2, &vec);
-
-//     // println!("========= test add with id");
-//     // let mut vec = Vec::with_capacity(dimension);
+//     // println!("========= test add");
+//     // let mut vec = Vec::with_capacity(dimension * index_size / 2);
 //     // for _i in 0..vec.capacity() {
 //     //     vec.push(rand::random::<f32>());
 //     // }
-//     // index.add_with_id(99999999, &vec).unwrap();
 
-//     println!("========= test add with ids");
-//     let mid = index_size / 2 + 1;
-//     let mut vec = Vec::with_capacity(dimension * index_size / 2);
-//     let mut ids: Vec<i64> = Vec::with_capacity(vec.capacity());
+//     // index.add(index_size / 2, &vec);
+
+//     println!("========= test add with id");
+//     let mut vec = Vec::with_capacity(dimension);
 //     for _i in 0..vec.capacity() {
 //         vec.push(rand::random::<f32>());
 //     }
-//     for i in mid..index_size / 2 + 1 {
-//         ids.push(i as i64);
+//     index.add_with_id(1, &vec).unwrap();
+//     let mut vec = Vec::with_capacity(dimension);
+//     for _i in 0..vec.capacity() {
+//         vec.push(rand::random::<f32>());
 //     }
-//     index.add_with_ids(&ids, &vec).unwrap();
+//     index.add_with_id(1, &vec).unwrap();
+//     let mut vec = Vec::with_capacity(dimension);
+//     for _i in 0..vec.capacity() {
+//         vec.push(rand::random::<f32>());
+//     }
+//     index.add_with_id(1, &vec).unwrap();
+
+//     // println!("========= test add with ids");
+//     // let mid = index_size / 2 + 1;
+//     // let mut vec = Vec::with_capacity(dimension * index_size / 2);
+//     // let mut ids: Vec<i64> = Vec::with_capacity(vec.capacity());
+//     // for _i in 0..vec.capacity() {
+//     //     vec.push(rand::random::<f32>());
+//     // }
+//     // for i in mid..index_size / 2 + 1 {
+//     //     ids.push(i as i64);
+//     // }
+//     // index.add_with_ids(&ids, &vec).unwrap();
 
 //     println!("========= test search");
 //     let mut vec = Vec::with_capacity(dimension);
