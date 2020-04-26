@@ -147,7 +147,7 @@ fn test_default() {
     let train_size = 10000;
 
     let mut conf = Config::new(dimension as i32);
-    conf.description = String::from("PCA32,IVF1,PQ8");
+    conf.description = String::from("HNSW100");
     let faiss = Faiss::new(conf);
 
     let mut vec = Vec::with_capacity(dimension * train_size);
@@ -159,7 +159,7 @@ fn test_default() {
 
     println!("========= test add with id");
 
-    for i in 0..2 {
+    for i in 0..200 {
         let mut vec = Vec::with_capacity(dimension);
         for _i in 0..vec.capacity() {
             vec.push(rand::random::<f32>());
@@ -176,7 +176,7 @@ fn test_default() {
     for i in 0..index_size {
         ids.push(i as i64);
     }
-    faiss.add_with_ids(&ids, &vec).unwrap();
+    // faiss.add_with_ids(&ids, &vec).unwrap();
 
     println!("========= test search");
     let mut vec = Vec::with_capacity(dimension);
