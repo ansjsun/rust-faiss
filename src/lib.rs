@@ -148,9 +148,9 @@ fn test_default() {
     let train_size = 10000;
 
     let mut conf = Config::new(dimension as i32);
-    conf.description = String::from("HNSW100");
     let faiss = Faiss::new(conf);
 
+    println!("========= test train");
     let mut vec = Vec::with_capacity(dimension * train_size);
     for _ in 0..vec.capacity() {
         let v = rand::random::<f32>();
@@ -169,7 +169,7 @@ fn test_default() {
     }
 
     println!("========= test add with ids");
-    let mut vec = Vec::with_capacity(dimension * index_size / 2);
+    let mut vec = Vec::with_capacity(dimension * index_size);
     let mut ids: Vec<i64> = Vec::with_capacity(vec.capacity());
     for _i in 0..vec.capacity() {
         vec.push(rand::random::<f32>());
