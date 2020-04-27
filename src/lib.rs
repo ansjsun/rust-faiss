@@ -12,12 +12,12 @@ cpp! {{
 
 cpp_class!(unsafe struct IndexIDMap as "faiss::IndexIDMap");
 
-pub struct Faiss {
+pub struct Index {
     pub config: Config,
     index: IndexIDMap,
 }
 
-impl Faiss {
+impl Index {
     pub fn new(conf: Config) -> Self {
         let (dimension, description, metric) = (
             conf.dimension,
@@ -32,7 +32,7 @@ impl Faiss {
             })
         };
 
-        Faiss {
+        Index {
             config: conf,
             index: index,
         }
@@ -148,7 +148,7 @@ fn test_default() {
     let train_size = 10000;
 
     let mut conf = Config::new(dimension as i32);
-    let faiss = Faiss::new(conf);
+    let index = Index::new(conf);
 
     println!("========= test train");
     let mut vec = Vec::with_capacity(dimension * train_size);
@@ -156,7 +156,7 @@ fn test_default() {
         let v = rand::random::<f32>();
         vec.push(v);
     }
-    faiss.train(&vec).unwrap();
+    index.train(&vec).unwrap();
 
     println!("========= test add with id");
 
@@ -165,7 +165,7 @@ fn test_default() {
         for _i in 0..vec.capacity() {
             vec.push(rand::random::<f32>());
         }
-        faiss.add_with_id(i * 9, &vec).unwrap();
+        index.add_with_id(i * 9, &vec).unwrap();
     }
 
     println!("========= test add with ids");
@@ -177,13 +177,13 @@ fn test_default() {
     for i in 0..index_size {
         ids.push(i as i64);
     }
-    // faiss.add_with_ids(&ids, &vec).unwrap();
+    // index.add_with_ids(&ids, &vec).unwrap();
 
     println!("========= test search");
     let mut vec = Vec::with_capacity(dimension);
     for _i in 0..vec.capacity() {
         vec.push(rand::random::<f32>());
     }
-    let result = faiss.search(2000, 1, &vec);
+    let result = index.search(2000, 1, &vec);
     println!("search result : {:?}", result);
 }
