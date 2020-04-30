@@ -2,8 +2,8 @@
 #![cfg_attr(not(test), allow(dead_code, unused_imports))]
 #![allow(unused)]
 
-use cpp::cpp;
-use cpp::cpp_class;
+#[macro_use]
+extern crate cpp;
 
 cpp! {{
     #include <faiss/index_factory.h>

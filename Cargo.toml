@@ -8,15 +8,11 @@ license = "Apache-2.0"
 keywords = ["faiss", "vector", "simarly", "ai"]
 homepage = "https://github.com/ansjsun/rust-faiss"
 
-
 [dependencies]
-cpp = { git = "https://github.com/mystor/rust-cpp" }
+cpp = "0.5.4"
 
 [dev-dependencies]
 rand = "0.7.3"
 
-
 [build-dependencies]
-cpp_build = { git = "https://github.com/mystor/rust-cpp" }
-
-
+cpp_build = "0.5.4"
