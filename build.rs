@@ -5,8 +5,10 @@ fn main() {
     } else {
         println!("cargo:rustc-link-search=faiss/");
         if let Ok(paths) = std::env::var("LD_LIBRARY_PATH") {
-            for path in paths.split(":").into_iter().filter(|x| *x != "") {
-                println!("cargo:rustc-link-search={}", path);
+            for path in paths.split(":") {
+                if path != "" {
+                    println!("cargo:rustc-link-search={}", path);
+                }
             }
         };
         println!("cargo:rustc-link-lib=static=faiss");
