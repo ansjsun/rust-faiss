@@ -1,12 +1,13 @@
 [package]
 name = "faiss4rs"
 description = "Rust wrapper for Facebook's faiss"
-version = "1.6.304"
+version = "1.6.305"
 authors = ["Ansj <ansj-sun@163.com>"]
 edition = "2018"
 license = "Apache-2.0"
 keywords = ["faiss", "vector", "simarly", "ai"]
 homepage = "https://github.com/ansjsun/rust-faiss"
+links = "faiss"
 
 [dependencies]
 cpp = "0.5.4"
