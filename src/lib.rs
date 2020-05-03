@@ -120,6 +120,11 @@ impl Index {
 
     pub fn max_id(&self) -> i64 {
         let index = &self.index;
+
+        if self.count() == 0 {
+            return 0;
+        }
+
         unsafe {
             cpp!([index as "faiss::IndexIDMap *"] -> i64 as "long long" {
                 long long v = index -> id_map.size();
