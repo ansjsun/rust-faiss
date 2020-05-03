@@ -303,11 +303,42 @@ fn test_default() {
     let result = index.search(2000, 1, &vec);
     println!("search result : {:?}", result);
 
-    assert!(index.is_trained());
-    println!("is_trained:{}", index.is_trained());
+    // assert!(index.is_trained());
+    // println!("is_trained:{}", index.is_trained());
 
     assert_eq!(200, index.count());
     println!("all count:{}", index.count());
 
+    println!("max_id:{}", index.max_id());
+}
+
+#[test]
+fn test_empty() {
+    use rand;
+    let dimension: usize = 128;
+    let index_size = 100000;
+    let train_size = 10000;
+
+    let mut conf = Config::new(dimension as i32);
+    conf.path = String::from("temp/empty.index");
+    conf.description = String::from("Flat");
+
+    let index = Index::open_or_create(conf);
+
+    println!("========= test search");
+    let mut vec = Vec::with_capacity(dimension);
+    for _i in 0..vec.capacity() {
+        vec.push(rand::random::<f32>());
+    }
+    let result = index.search(2000, 1, &vec);
+    println!("search result : {:?}", result);
+
+    assert!(index.is_trained());
+    println!("is_trained:{}", index.is_trained());
+
+    assert_eq!(0, index.count());
+    println!("all count:{}", index.count());
+
+    assert_eq!(0, index.max_id());
     println!("max_id:{}", index.max_id());
 }
