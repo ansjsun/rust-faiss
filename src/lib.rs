@@ -6,11 +6,13 @@
 extern crate cpp;
 
 cpp! {{
+    #include <stdio.h>
     #include <faiss/index_factory.h>
     #include <faiss/MetaIndexes.h>
+    #include <faiss/index_io.h>
 }}
 
-cpp_class!(unsafe struct IndexIDMap as "faiss::IndexIDMap");
+cpp_class!(pub unsafe struct IndexIDMap as "faiss::IndexIDMap");
 
 pub struct Index {
     pub config: Config,
@@ -18,15 +20,30 @@ pub struct Index {
 }
 
 impl Index {
+    pub fn open_or_create(conf: Config) -> Self {
+        if std::path::Path::new(conf.path.as_str()).is_file() {
+            return Self {
+                index: Self::read_index(conf.path.as_str()),
+                config: conf,
+            };
+        } else {
+            return Self::new(conf);
+        }
+    }
+
     pub fn new(conf: Config) -> Self {
         let (dimension, description, metric) = (
             conf.dimension,
-            conf.description.as_ptr(),
+            conf.description.as_str(),
             conf.metric_type as i32,
         );
+
+        let description = std::ffi::CString::new(description).unwrap();
+        let d_ptr = description.as_ptr();
+
         let index = unsafe {
-            cpp!([dimension as "int", description as "const char *", metric as "faiss::MetricType"] -> IndexIDMap as "faiss::IndexIDMap"{
-                auto index = index_factory(dimension,description, metric);
+            cpp!([dimension as "int", d_ptr as "const char *", metric as "faiss::MetricType"] -> IndexIDMap as "faiss::IndexIDMap"{
+                auto index = index_factory(dimension,d_ptr, metric);
                 faiss::IndexIDMap *map = new faiss::IndexIDMap(index);
                 return *map ;
             })
@@ -74,6 +91,43 @@ impl Index {
         Ok(())
     }
 
+    pub fn is_trained(&self) -> bool {
+        let index = &self.index;
+        unsafe {
+            cpp!([index as "faiss::IndexIDMap *"] -> bool as "bool" {
+                return index -> is_trained;
+            })
+        }
+    }
+
+    pub fn dimension(&self) -> i32 {
+        let index = &self.index;
+        unsafe {
+            cpp!([index as "faiss::IndexIDMap *"] -> i32 as "int" {
+                return index -> d;
+            })
+        }
+    }
+
+    pub fn count(&self) -> i64 {
+        let index = &self.index;
+        unsafe {
+            cpp!([index as "faiss::IndexIDMap *"] -> i64 as "long long" {
+                return index -> id_map.size();
+            })
+        }
+    }
+
+    pub fn max_id(&self) -> i64 {
+        let index = &self.index;
+        unsafe {
+            cpp!([index as "faiss::IndexIDMap *"] -> i64 as "long long" {
+                long long v = index -> id_map.size();
+                return index -> id_map[v-1] ;
+            })
+        }
+    }
+
     // search index, return  id list , and score list . if result < size , it will truncate
     pub fn search(&self, size: i32, num_querys: i32, queries: &Vec<f32>) -> (Vec<i64>, Vec<f32>) {
         let index = &self.index;
@@ -113,6 +167,29 @@ impl Index {
 
         return (nns, dis);
     }
+
+    pub fn write_index(&self) {
+        let index = &self.index;
+        let path = std::ffi::CString::new(self.config.path.as_str()).unwrap();
+        let path_ptr = path.as_ptr();
+        unsafe {
+            cpp!([index as "faiss::IndexIDMap *" , path_ptr as "const char *"] {
+                faiss::write_index(index, path_ptr);
+            })
+        }
+    }
+
+    pub fn read_index(path: &str) -> IndexIDMap {
+        let path = std::ffi::CString::new(path).unwrap();
+        let path_ptr = path.as_ptr();
+        unsafe {
+            cpp!([path_ptr as "const char *"] -> IndexIDMap as "faiss::IndexIDMap" {
+                auto index = faiss::read_index(path_ptr, 0);
+                auto index_ref = dynamic_cast<faiss::IndexIDMap*>(index);
+                return *index_ref ;
+            })
+        }
+    }
 }
 
 #[derive(Copy, Clone)]
@@ -128,6 +205,8 @@ pub struct Config {
     pub description: String,
     // the type of metric
     pub metric_type: MetricType,
+    // index path for persistence
+    pub path: String,
 }
 
 impl Config {
@@ -136,6 +215,7 @@ impl Config {
             dimension: dimension,
             description: String::from("PCA32,IVF100,PQ8"),
             metric_type: MetricType::L2,
+            path: String::from("temp.index"),
         };
     }
 }
@@ -148,14 +228,22 @@ fn test_default() {
     let train_size = 10000;
 
     let mut conf = Config::new(dimension as i32);
+    conf.path = String::from("temp/large.index");
+    conf.description = String::from("PCA32,IVF1,PQ8");
     let index = Index::new(conf);
 
+    assert!(index.dimension() == dimension as i32);
+
+    println!("========= dimension {}", index.dimension());
     println!("========= test train");
     let mut vec = Vec::with_capacity(dimension * train_size);
     for _ in 0..vec.capacity() {
         let v = rand::random::<f32>();
         vec.push(v);
     }
+
+    assert!(!index.is_trained());
+    println!("is_trained:{}", index.is_trained());
     index.train(&vec).unwrap();
 
     println!("========= test add with id");
@@ -186,4 +274,40 @@ fn test_default() {
     }
     let result = index.search(2000, 1, &vec);
     println!("search result : {:?}", result);
+
+    assert!(index.is_trained());
+    println!("is_trained:{}", index.is_trained());
+
+    assert_eq!(200, index.count());
+    println!("all count:{}", index.count());
+
+    println!("max_id:{}", index.max_id());
+
+    std::fs::create_dir_all("temp");
+
+    //to persistence index
+    index.write_index();
+
+    drop(index);
+
+    let mut conf = Config::new(dimension as i32);
+    conf.path = String::from("temp/large.index");
+
+    let index = Index::open_or_create(conf);
+
+    println!("========= test search");
+    let mut vec = Vec::with_capacity(dimension);
+    for _i in 0..vec.capacity() {
+        vec.push(rand::random::<f32>());
+    }
+    let result = index.search(2000, 1, &vec);
+    println!("search result : {:?}", result);
+
+    assert!(index.is_trained());
+    println!("is_trained:{}", index.is_trained());
+
+    assert_eq!(200, index.count());
+    println!("all count:{}", index.count());
+
+    println!("max_id:{}", index.max_id());
 }
