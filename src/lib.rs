@@ -136,6 +136,11 @@ impl Index {
     // search index, return  id list , and score list . if result < size , it will truncate
     pub fn search(&self, size: i32, num_querys: i32, queries: &Vec<f32>) -> (Vec<i64>, Vec<f32>) {
         let index = &self.index;
+
+        if self.count() == 0 {
+            return (Vec::new(), Vec::new());
+        }
+
         let len = (size * num_querys) as usize;
         let mut nns: Vec<i64> = Vec::with_capacity(len);
         let mut dis: Vec<f32> = Vec::with_capacity(len);
@@ -341,31 +346,29 @@ fn test_empty_need_train() {
 
 #[test]
 fn test_empty() {
-    use rand;
-    let dimension: usize = 128;
-    let index_size = 100000;
-    let train_size = 10000;
+    for desc in ["HNSW2", "Flat"].iter() {
+        use rand;
+        let dimension: usize = 128;
+        let index_size = 100000;
+        let train_size = 10000;
+        let mut conf = Config::new(dimension as i32);
+        conf.path = String::from("temp/empty.index");
+        conf.description = desc.to_string();
+        let index = Index::open_or_create(conf);
 
-    let mut conf = Config::new(dimension as i32);
-    conf.path = String::from("temp/empty.index");
-    conf.description = String::from("Flat");
+        println!("========= test search");
+        let mut vec = Vec::with_capacity(dimension);
+        for _i in 0..vec.capacity() {
+            vec.push(rand::random::<f32>());
+        }
 
-    let index = Index::open_or_create(conf);
-
-    println!("========= test search");
-    let mut vec = Vec::with_capacity(dimension);
-    for _i in 0..vec.capacity() {
-        vec.push(rand::random::<f32>());
+        let result = index.search(2000, 1, &vec);
+        println!("search result : {:?}", result);
+        assert!(index.is_trained());
+        println!("is_trained:{}", index.is_trained());
+        assert_eq!(0, index.count());
+        println!("all count:{}", index.count());
+        assert_eq!(0, index.max_id());
+        println!("max_id:{}", index.max_id());
     }
-    let result = index.search(2000, 1, &vec);
-    println!("search result : {:?}", result);
-
-    assert!(index.is_trained());
-    println!("is_trained:{}", index.is_trained());
-
-    assert_eq!(0, index.count());
-    println!("all count:{}", index.count());
-
-    assert_eq!(0, index.max_id());
-    println!("max_id:{}", index.max_id());
 }
