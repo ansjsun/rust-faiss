@@ -1,28 +1,19 @@
 fn main() {
-    if get_os_type() == "macos" {
-        // println!("cargo:rustc-link-search=faiss/");
-        // println!("cargo:rustc-link-search=/usr/local/lib");
-        // println!("cargo:rustc-link-search=/usr/lib");
-        // if let Ok(paths) = std::env::var("LD_LIBRARY_PATH") {
-        //     for path in paths.split(":") {
-        //         if path != "" {
-        //             println!("cargo:rustc-link-search={}", path);
-        //         }
-        //     }
-        // };
-        println!("cargo:rustc-link-lib=dylib=omp");
-        println!("cargo:rustc-link-lib=dylib=faiss");
-    } else {
-        println!("cargo:rustc-link-search=faiss/");
-        println!("cargo:rustc-link-search=/usr/local/lib");
-        println!("cargo:rustc-link-search=/usr/lib");
-        if let Ok(paths) = std::env::var("LD_LIBRARY_PATH") {
-            for path in paths.split(":") {
-                if path != "" {
-                    println!("cargo:rustc-link-search={}", path);
-                }
+    if let Ok(paths) = std::env::var("LD_LIBRARY_PATH") {
+        for path in paths.split(":") {
+            if path != "" {
+                println!("cargo:rustc-link-search={}", path);
             }
-        };
+        }
+    };
+
+    println!("cargo:rustc-link-search=/usr/local/lib");
+    println!("cargo:rustc-link-search=/usr/lib");
+
+    if get_os_type() == "macos" {
+        println!("cargo:rustc-link-lib=omp");
+        println!("cargo:rustc-link-lib=faiss");
+    } else {
         println!("cargo:rustc-link-lib=static=faiss");
         println!("cargo:rustc-link-lib=gomp");
         println!("cargo:rustc-link-lib=blas");
