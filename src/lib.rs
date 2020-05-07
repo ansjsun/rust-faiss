@@ -202,6 +202,18 @@ impl Index {
     }
 }
 
+impl Drop for Index {
+    fn drop(&mut self) {
+        let index = &self.index;
+        unsafe {
+            cpp!([index as "faiss::IndexIDMap *"] {
+                index -> reset() ;
+                delete index -> index ;
+            })
+        }
+    }
+}
+
 #[derive(Copy, Clone)]
 pub enum MetricType {
     L2 = 1,
@@ -275,7 +287,7 @@ fn test_default() {
     for i in 0..index_size {
         ids.push(i as i64);
     }
-    // index.add_with_ids(&ids, &vec).unwrap();
+    index.add_with_ids(&ids, &vec).unwrap();
 
     println!("========= test search");
     let mut vec = Vec::with_capacity(dimension);
@@ -342,6 +354,37 @@ fn test_empty_need_train() {
 
     assert_eq!(0, index.max_id());
     println!("max_id:{}", index.max_id());
+}
+
+#[test]
+fn test_drop() {
+    use rand;
+    let dimension: usize = 128;
+    let index_size = 50000;
+
+    let mut vec = Vec::with_capacity(dimension * index_size);
+    let mut ids: Vec<i64> = Vec::with_capacity(vec.capacity());
+    for l in (0..100) {
+        unsafe {
+            vec.set_len(0);
+            ids.set_len(0);
+        }
+
+        let mut conf = Config::new(dimension as i32);
+        conf.path = String::from("temp/empty.index");
+        conf.description = String::from("Flat");
+        let mut index = Index::open_or_create(conf);
+
+        for _i in 0..vec.capacity() {
+            vec.push(rand::random::<f32>());
+        }
+        for i in 0..index_size {
+            ids.push(i as i64);
+        }
+        index.add_with_ids(&ids, &vec).unwrap();
+
+        println!("{}========= test add with ids count:{}", l, index.count());
+    }
 }
 
 #[test]
